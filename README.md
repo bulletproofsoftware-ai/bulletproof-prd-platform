@@ -2,6 +2,8 @@
 
 A full-stack application for brainstorming, researching, creating, editing, and reviewing Product Requirements Documents.
 
+> 📚 Full documentation in [`docs/`](docs/) · 🔒 security scan in [`docs/scan/scan-report.md`](docs/scan/scan-report.md). (System-overview media coming soon.)
+
 ## Features
 
 - **Brainstorm** — Chat with Claude to explore ideas, extract themes, promote to ideas/research/PRDs
@@ -35,7 +37,7 @@ A full-stack application for brainstorming, researching, creating, editing, and 
 docker compose up -d prd-platform
 ```
 
-Accessible at `http://localhost:3003`.
+Accessible at `http://localhost:3000`.
 
 ### Running Locally
 
