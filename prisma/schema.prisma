@@ -1,0 +1,168 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PrdStatus {
+  draft
+  research
+  editing
+  review
+  approved
+  rejected
+}
+
+enum PrdSource {
+  idea
+  research
+  upload
+  manual
+  brainstorm
+}
+
+enum IdeaStatus {
+  open
+  promoted
+  archived
+}
+
+enum ResearchStatus {
+  running
+  completed
+  failed
+}
+
+enum BrainstormStatus {
+  active
+  promoted
+  archived
+}
+
+enum BrainstormRole {
+  user
+  assistant
+}
+
+enum ReviewStatus {
+  pending
+  in_progress
+  approved
+  rejected
+  changes_requested
+}
+
+model Prd {
+  id         String    @id @default(uuid()) @db.Uuid
+  title      String
+  status     PrdStatus @default(draft)
+  contentMd  String    @map("content_md") @db.Text
+  source     PrdSource
+  author     String    @default("local")
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+
+  ideas            Idea[]
+  researchSessions ResearchSession[]
+  reviews          Review[]
+  versions         PrdVersion[]
+
+  @@map("prds")
+}
+
+model Idea {
+  id          String     @id @default(uuid()) @db.Uuid
+  title       String
+  description String     @db.Text
+  tags        String[]
+  status      IdeaStatus @default(open)
+  prdId       String?    @map("prd_id") @db.Uuid
+  createdAt   DateTime   @default(now()) @map("created_at")
+
+  prd Prd? @relation(fields: [prdId], references: [id])
+
+  @@map("ideas")
+}
+
+model ResearchSession {
+  id        String         @id @default(uuid()) @db.Uuid
+  prdId     String?        @map("prd_id") @db.Uuid
+  prompt    String         @db.Text
+  status    ResearchStatus @default(running)
+  queries   Json           @default("[]")
+  results   Json           @default("[]")
+  createdAt DateTime       @default(now()) @map("created_at")
+
+  prd Prd? @relation(fields: [prdId], references: [id])
+
+  @@map("research_sessions")
+}
+
+model BrainstormSession {
+  id         String           @id @default(uuid()) @db.Uuid
+  title      String
+  status     BrainstormStatus @default(active)
+  promotedTo String?          @map("promoted_to")
+  promotedId String?          @map("promoted_id") @db.Uuid
+  createdAt  DateTime         @default(now()) @map("created_at")
+  updatedAt  DateTime         @updatedAt @map("updated_at")
+
+  messages BrainstormMessage[]
+
+  @@map("brainstorm_sessions")
+}
+
+model BrainstormMessage {
+  id              String         @id @default(uuid()) @db.Uuid
+  sessionId       String         @map("session_id") @db.Uuid
+  role            BrainstormRole
+  content         String         @db.Text
+  extractedThemes Json?          @map("extracted_themes")
+  createdAt       DateTime       @default(now()) @map("created_at")
+
+  session BrainstormSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("brainstorm_messages")
+}
+
+model Review {
+  id              String       @id @default(uuid()) @db.Uuid
+  prdId           String       @map("prd_id") @db.Uuid
+  status          ReviewStatus @default(pending)
+  aiSummary       String?      @map("ai_summary") @db.Text
+  securityScan    Json?        @map("security_scan")
+  duplicationScan Json?        @map("duplication_scan")
+  createdAt       DateTime     @default(now()) @map("created_at")
+
+  prd      Prd             @relation(fields: [prdId], references: [id])
+  comments ReviewComment[]
+
+  @@map("reviews")
+}
+
+model ReviewComment {
+  id         String   @id @default(uuid()) @db.Uuid
+  reviewId   String   @map("review_id") @db.Uuid
+  author     String   @default("local")
+  body       String   @db.Text
+  sectionRef String?  @map("section_ref")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@map("review_comments")
+}
+
+model PrdVersion {
+  id            String   @id @default(uuid()) @db.Uuid
+  prdId         String   @map("prd_id") @db.Uuid
+  contentMd     String   @map("content_md") @db.Text
+  versionNumber Int      @map("version_number")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  prd Prd @relation(fields: [prdId], references: [id], onDelete: Cascade)
+
+  @@map("prd_versions")
+}
