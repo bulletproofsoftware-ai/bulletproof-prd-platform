@@ -75,3 +75,7 @@ src/
 prisma/            # Schema and migrations
 scripts/           # CLI proxy server
 ```
+
+## License
+
+Apache-2.0 — see [LICENSE](LICENSE).
