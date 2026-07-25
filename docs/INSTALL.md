@@ -69,7 +69,9 @@ Because the container cannot exec the host's Claude/Gemini CLIs, start the CLI p
 **host** first:
 
 ```bash
-node scripts/cli-proxy.mjs      # listens on 0.0.0.0:3199
+node scripts/cli-proxy.mjs      # listens on 127.0.0.1:3199 by default
+# The proxy executes CLIs on POSTed prompts with no auth. To expose it to
+# containers, set CLI_PROXY_HOST to a trusted interface — see SECURITY.md.
 ```
 
 > **Note:** This repository does not ship a `docker-compose.yml`. If your environment defines a

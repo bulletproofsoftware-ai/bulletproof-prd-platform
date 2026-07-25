@@ -10,12 +10,16 @@ type ScanFinding = {
 };
 
 export async function runSecurityScan(content: string): Promise<ScanFinding[]> {
+  // Feature-off by default: without a configured governance plugin path the
+  // scan is disabled and returns no findings.
+  const pluginPath = process.env.GOVERNANCE_PLUGIN_PATH;
+  if (!pluginPath) return [];
   try {
     const { stdout } = await execFileAsync(
       "python3",
       ["-c", `
 import sys, json
-sys.path.insert(0, "${process.env.GOVERNANCE_PLUGIN_PATH || "~/.claude/plugins/local/governance-plugin"}")
+sys.path.insert(0, "${pluginPath}")
 from governance.lib.llm_threat_detector import LLMThreatDetector
 detector = LLMThreatDetector()
 results = detector.scan_content(sys.stdin.read())

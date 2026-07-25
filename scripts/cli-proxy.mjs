@@ -5,7 +5,12 @@
  * so the Docker container can call them through host.docker.internal.
  *
  * Usage: node scripts/cli-proxy.mjs
- * Listens on port 3100
+ * Listens on 127.0.0.1:3199 by default. The proxy executes CLIs on POSTed
+ * prompts with NO authentication — bind it to a non-loopback interface
+ * (CLI_PROXY_HOST) only on a trusted network you control. For Docker on
+ * Docker Desktop, 127.0.0.1 is reachable from containers via
+ * host.docker.internal after enabling host networking, or set
+ * CLI_PROXY_HOST to the docker bridge address you trust.
  */
 
 import { createServer } from "node:http";
@@ -13,7 +18,8 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
-const PORT = 3199;
+const PORT = Number(process.env.CLI_PROXY_PORT || 3199);
+const HOST = process.env.CLI_PROXY_HOST || "127.0.0.1";
 
 const CLAUDE_CLI = process.env.CLAUDE_CLI_PATH || "claude";
 const GEMINI_CLI = process.env.GEMINI_CLI_PATH || "gemini";
@@ -67,8 +73,8 @@ async function handleRequest(req, res) {
 }
 
 const server = createServer(handleRequest);
-server.listen(PORT, "0.0.0.0", () => {
-  console.log(`CLI Proxy listening on http://0.0.0.0:${PORT}`);
+server.listen(PORT, HOST, () => {
+  console.log(`CLI Proxy listening on http://${HOST}:${PORT}`);
   console.log(`  Claude CLI: ${CLAUDE_CLI}`);
   console.log(`  Gemini CLI: ${GEMINI_CLI}`);
 });

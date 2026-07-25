@@ -26,18 +26,21 @@ A full-stack application for brainstorming, researching, creating, editing, and 
 
 ### Prerequisites
 
-- Docker & Docker Compose
 - Node.js 20+
-- PostgreSQL (or use the `claude-postgres` container)
+- PostgreSQL (any reachable instance; the app uses a schema named `prd_platform`)
+- Docker (only if you run the container image)
 
-### Running with Docker Compose
+### Running with Docker
 
 ```bash
-# From your project directory
-docker compose up -d prd-platform
+docker build -t bulletproof-prd-platform .
+docker run --rm -p 3000:3000 \
+  -e DATABASE_URL="postgresql://user:pass@host.docker.internal:5432/dbname?schema=prd_platform" \
+  -e CLI_PROXY_URL="http://host.docker.internal:3199" \
+  bulletproof-prd-platform
 ```
 
-Accessible at `http://localhost:3000`.
+Accessible at `http://localhost:3000`. See [docs/INSTALL.md](docs/INSTALL.md) for details.
 
 ### Running Locally
 
@@ -54,10 +57,13 @@ npm run dev
 The brainstorm and research features call Claude/Gemini CLIs. Inside Docker, these are accessed via a host-side proxy:
 
 ```bash
-node scripts/cli-proxy.mjs
+node scripts/cli-proxy.mjs   # binds 127.0.0.1:3199 by default (no auth — see SECURITY.md)
 ```
 
 Set `CLI_PROXY_URL=http://host.docker.internal:3199` in the container environment.
+On Docker Desktop (macOS/Windows) `host.docker.internal` reaches the loopback-bound
+proxy directly; on Linux, set `CLI_PROXY_HOST` to a trusted bridge interface and
+firewall the port (see [SECURITY.md](SECURITY.md)).
 
 ## Testing
 
