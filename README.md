@@ -2,7 +2,9 @@
 
 A full-stack application for brainstorming, researching, creating, editing, and reviewing Product Requirements Documents.
 
-> 📚 Full documentation in [`docs/`](docs/) · 🔒 security scan in [`docs/scan/scan-report.md`](docs/scan/scan-report.md). (System-overview media coming soon.)
+![bulletproof-prd-platform — overview](docs/media/infographic.png)
+
+> 📚 Full documentation in [`docs/`](docs/) · 🔒 security scan in [`docs/scan/scan-report.md`](docs/scan/scan-report.md) · 🎬 System overview: [briefing](media/system-overview.md).
 
 ## Features
 
