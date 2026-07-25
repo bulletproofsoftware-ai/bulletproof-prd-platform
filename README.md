@@ -4,7 +4,7 @@ A full-stack application for brainstorming, researching, creating, editing, and 
 
 ![bulletproof-prd-platform — overview](docs/media/infographic.png)
 
-> 📚 Full documentation in [`docs/`](docs/) · 🔒 security scan in [`docs/scan/scan-report.md`](docs/scan/scan-report.md) · 🎬 System overview: [briefing](media/system-overview.md) · [deck](media/bulletproof-prd-platform-deck.pdf).
+> 📚 Full documentation in [`docs/`](docs/) · 🔒 security scan in [`docs/scan/scan-report.md`](docs/scan/scan-report.md) · 🎬 System overview: [briefing](media/system-overview.md) · [deck](media/bulletproof-prd-platform-deck.pdf) · [video](media/system-overview.mp4).
 
 ## Features
 
