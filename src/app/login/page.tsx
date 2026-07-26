@@ -21,13 +21,29 @@ export default function LoginPage() {
         // `next` is attacker-controllable. Unvalidated it is both an open
         // redirect (?next=https://evil.example) and an XSS sink
         // (?next=javascript:alert(1)) — CodeQL js/client-side-unvalidated-url-
-        // redirection and js/xss. Only same-origin absolute paths are honoured;
-        // "//host" is rejected because the browser reads it as protocol-relative.
+        // redirection and js/xss.
+        //
+        // Resolve it against our own origin and compare origins, rather than
+        // pattern-matching the raw string. The previous prefix test
+        //   startsWith("/") && !startsWith("//") && !startsWith("/\\")
+        // was bypassable: the URL parser strips tab, CR and LF before
+        // resolving, so "/\t/evil.example" passed all three checks and the
+        // browser then navigated to https://evil.example/. Parsing first means
+        // the value we test is the value the browser will actually use.
+        // javascript: and data: URLs fail the comparison because their origin
+        // is opaque, never our own.
         const next = new URLSearchParams(window.location.search).get("next");
-        const safeNext =
-          next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\")
-            ? next
-            : "/";
+        let safeNext = "/";
+        if (next) {
+          try {
+            const resolved = new URL(next, window.location.origin);
+            if (resolved.origin === window.location.origin) {
+              safeNext = resolved.pathname + resolved.search + resolved.hash;
+            }
+          } catch {
+            // Unparseable target — fall through to "/".
+          }
+        }
         window.location.href = safeNext;
         return;
       }
