@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { cookieVerifier } from "@/middleware";
 
 /**
  * Exchanges the shared secret for an httpOnly cookie so browser navigation
@@ -35,8 +36,14 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid key." }, { status: 401 });
   }
 
+  // Store a derived verifier, never the shared secret itself: a cookie is
+  // readable by anything that can reach the browser jar or a backup of it,
+  // and the raw key would be replayable against the API directly.
+  // The middleware accepts either this digest or the raw key in a header.
+  const verifier = cookieVerifier(key);
+
   const res = NextResponse.json({ ok: true });
-  res.cookies.set("prd_platform_key", key, {
+  res.cookies.set("prd_platform_key", verifier, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

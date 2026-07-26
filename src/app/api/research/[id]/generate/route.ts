@@ -8,7 +8,18 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   if (!session) return NextResponse.json({ error: "Not found" }, { status: 404 });
   if (session.status !== "completed") return NextResponse.json({ error: "Research not completed" }, { status: 400 });
 
-  const results = session.results as Array<{ query: string; result: string }>;
+  // `results` is a nullable JSON column. The cast asserted an array without
+  // checking, so a completed session that stored null (or a non-array shape)
+  // crashed here with "results.map is not a function" instead of returning a
+  // useful error.
+  const rawResults = session.results;
+  if (!Array.isArray(rawResults) || rawResults.length === 0) {
+    return NextResponse.json(
+      { error: "Research session has no results to generate from" },
+      { status: 400 },
+    );
+  }
+  const results = rawResults as Array<{ query: string; result: string }>;
   const researchContext = results.map((r) => `### Research: ${r.query}\n\n${r.result}`).join("\n\n---\n\n");
 
   const prompt = `Based on the research findings below, generate a comprehensive PRD in markdown format with sections:

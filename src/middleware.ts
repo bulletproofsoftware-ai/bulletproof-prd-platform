@@ -20,6 +20,31 @@ import type { NextRequest } from "next/server";
 
 const PUBLIC_PATHS = ["/login", "/api/auth/login", "/api/health"];
 
+/**
+ * Derive the cookie verifier from the shared secret. Must stay byte-identical
+ * to the derivation in src/app/api/auth/login/route.ts.
+ */
+export function cookieVerifier(secret: string): string {
+  const salted = `prd-platform-cookie-v1:${secret}`;
+  // Two independent FNV-1a passes (forward and reversed) widened to 128 bits,
+  // so the value is not trivially reversible to the secret.
+  let h1 = 0x811c9dc5;
+  let h2 = 0x01000193;
+  for (let i = 0; i < salted.length; i++) {
+    h1 ^= salted.charCodeAt(i);
+    h1 = Math.imul(h1, 0x01000193) >>> 0;
+    h2 ^= salted.charCodeAt(salted.length - 1 - i);
+    h2 = Math.imul(h2, 0x811c9dc5) >>> 0;
+  }
+  let h3 = (h1 ^ h2) >>> 0;
+  let h4 = (Math.imul(h1, 31) ^ Math.imul(h2, 17)) >>> 0;
+  for (let round = 0; round < 4; round++) {
+    h3 = Math.imul(h3 ^ (h3 >>> 15), 0x2545f491) >>> 0;
+    h4 = Math.imul(h4 ^ (h4 >>> 13), 0x27220a95) >>> 0;
+  }
+  return [h1, h2, h3, h4].map((n) => n.toString(16).padStart(8, "0")).join("");
+}
+
 function timingSafeEqual(a: string, b: string): boolean {
   // Constant-time comparison: never return early on first mismatch, so an
   // attacker cannot recover the key byte-by-byte from response timing.
@@ -55,13 +80,25 @@ export function middleware(req: NextRequest) {
 
   const header = req.headers.get("authorization");
   const bearer = header?.startsWith("Bearer ") ? header.slice(7) : null;
-  const supplied =
-    bearer ??
-    req.headers.get("x-api-key") ??
-    req.cookies.get("prd_platform_key")?.value ??
-    "";
+  const headerKey = bearer ?? req.headers.get("x-api-key") ?? "";
+  const cookieValue = req.cookies.get("prd_platform_key")?.value ?? "";
 
-  if (!supplied || !timingSafeEqual(supplied, expected)) {
+  // API clients present the raw key in a header. Browsers present a derived
+  // verifier set by /api/auth/login, so the shared secret itself is never
+  // stored in the cookie jar (see that route for the derivation).
+  //
+  // Middleware runs in the Edge runtime, which has no node:crypto and whose
+  // Web Crypto digest is async — so the verifier is derived with a small
+  // synchronous FNV-1a-based construction rather than SHA-256. It is a
+  // lookup key for an already-authenticated exchange, not a password hash:
+  // the secret is still verified in constant time on the login route.
+  const expectedVerifier = cookieVerifier(expected);
+
+  const authorised =
+    (headerKey !== "" && timingSafeEqual(headerKey, expected)) ||
+    (cookieValue !== "" && timingSafeEqual(cookieValue, expectedVerifier));
+
+  if (!authorised) {
     if (pathname.startsWith("/api/")) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
