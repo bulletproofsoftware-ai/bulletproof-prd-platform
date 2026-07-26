@@ -18,8 +18,17 @@ export default function LoginPage() {
         body: JSON.stringify({ key }),
       });
       if (res.ok) {
+        // `next` is attacker-controllable. Unvalidated it is both an open
+        // redirect (?next=https://evil.example) and an XSS sink
+        // (?next=javascript:alert(1)) — CodeQL js/client-side-unvalidated-url-
+        // redirection and js/xss. Only same-origin absolute paths are honoured;
+        // "//host" is rejected because the browser reads it as protocol-relative.
         const next = new URLSearchParams(window.location.search).get("next");
-        window.location.href = next || "/";
+        const safeNext =
+          next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\")
+            ? next
+            : "/";
+        window.location.href = safeNext;
         return;
       }
       const data = await res.json().catch(() => ({}));
