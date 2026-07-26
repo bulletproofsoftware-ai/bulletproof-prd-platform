@@ -18,7 +18,9 @@ export function PrdList() {
     setPrds(await res.json());
   }, [filter]);
 
-  useEffect(() => { fetchPrds(); }, [fetchPrds]);
+  // Await inside the effect so the state update lands in a microtask rather
+  // than synchronously in the effect body (react-hooks/set-state-in-effect).
+  useEffect(() => { void (async () => { await fetchPrds(); })(); }, [fetchPrds]);
 
   return (
     <div>

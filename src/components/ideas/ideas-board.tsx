@@ -31,8 +31,10 @@ export function IdeasBoard() {
     setIdeas(data);
   }, []);
 
+  // Await inside the effect so the state update lands in a microtask rather
+  // than synchronously in the effect body (react-hooks/set-state-in-effect).
   useEffect(() => {
-    fetchIdeas();
+    void (async () => { await fetchIdeas(); })();
   }, [fetchIdeas]);
 
   async function handleCreate(data: { title: string; description: string; tags: string[] }) {

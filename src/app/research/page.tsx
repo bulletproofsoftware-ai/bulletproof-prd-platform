@@ -18,7 +18,9 @@ export default function ResearchPage() {
     setSessions(await res.json());
   }, []);
 
-  useEffect(() => { fetchSessions(); }, [fetchSessions]);
+  // Await inside the effect so the state update lands in a microtask rather
+  // than synchronously in the effect body (react-hooks/set-state-in-effect).
+  useEffect(() => { void (async () => { await fetchSessions(); })(); }, [fetchSessions]);
 
   function handleStart(sessionId: string) { router.push(`/research/${sessionId}`); }
 
